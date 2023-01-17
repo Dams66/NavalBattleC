@@ -1,0 +1,21 @@
+# depslib dependency file v1.0
+1579190776 source:r:\s1\s1g1\soubirant_damien\tlp_cpp\bataille navale15\jeu.cpp
+	<iostream>
+	<cstdlib>
+	<cstring>
+	<windows.h>
+	<time.h>
+	<stdio.h>
+
+1579220963 source:c:\users\damie\desktop\bataille navale 16-01\jeu.cpp
+	<iostream>
+	<cstdlib>
+	<string>
+	<cstring>
+	<windows.h>
+	<time.h>
+	<stdio.h>
+	<iomanip>
+	<fstream>
+	<clocale>
+

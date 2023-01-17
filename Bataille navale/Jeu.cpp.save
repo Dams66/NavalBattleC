@@ -1,0 +1,593 @@
+#include <iostream>
+#include <cstdlib>
+#include <cstring>
+#include <windows.h>
+#include <time.h>
+#include <stdio.h>
+
+
+using namespace std;
+
+const int TAILLE_X = 10;
+const int TAILLE_Y = 10;
+const int NB_BATEAU = 4;
+const int deux = 2;
+
+typedef struct {
+    bool etat ;
+    int taille;
+    int nb_touche ;
+    char logobateau;
+    string nom_bat;
+} S_bateau;
+
+typedef char t_grille[TAILLE_X+1][TAILLE_Y+1];
+typedef S_bateau t_fiche_bateau[NB_BATEAU][deux];
+typedef int T_coo[deux];
+
+void Change_joueur (int &player){
+        if (player == 1)
+            player=2;
+        else
+            player =1;
+}
+
+void init_grille(t_grille &grille){
+    int cptX;
+    int cptY;
+    for (cptY = 0; cptY < TAILLE_Y; cptY++)
+    {
+        for (cptX = 0; cptX < TAILLE_X; cptX++)
+        {
+            grille[cptX][cptY] = ' ';
+        }
+        grille[TAILLE_X][cptY]='-';
+    }
+    for (cptX = 0; cptX < TAILLE_X+1; cptX++)
+        {
+            grille[cptX][TAILLE_Y] = '-';
+        }
+
+}
+
+void afficher_grille(t_grille &grille,int player, bool win){
+    int cptX;
+    int cptY;
+
+    cout <<"   "<< "|";
+    for (cptX = 0; cptX < TAILLE_X; cptX++)
+    {
+            cout << ' '<<char(65+cptX)<<' ' << "|";
+    }
+    cout<<"    Flotte du joueur "<<player<<endl;
+    for (cptY = 0; cptY < TAILLE_Y; cptY++)
+    {
+        cout<<' '<<cptY<<' '<<'|';
+            for (cptX = 0; cptX < TAILLE_X; cptX++)
+            {
+                cout <<' '<< grille[cptX][cptY]<<' '<< "|";
+            }
+        cout <<endl;
+    }
+    cout<<endl;
+    if (win == true )
+        cout<<"Joueur "<<player<<" a gagné"<<endl<<endl;
+
+}
+
+int choisir_mode(){
+    int res;
+
+    cout<<"               Choisir mode de jeu"<<endl<<endl;
+    cout<<"[1] Joueur 1 vs Joueur 2"<<endl;
+    cout<<"[2] Joueur 1 vs IA"<<endl;
+    cin>>res;
+    while(res != 1 && res!= 2){
+        cout<<"Choisir un mode valide"<<endl;
+        cin>>res;
+    }
+    return(res);
+}
+
+bool verifcoo_placement(T_coo coor, t_grille grille)//verifie si une case est occupé
+{
+    bool verif;
+    if (grille[coor[0]][coor[1]] == ' ')
+        verif = true;
+    else
+        verif = false;
+    return (verif);
+}
+
+void remplir_grille(T_coo coor, t_grille & grille,char logobateau,char sens, int taille_bateau)//remplie une case avec des valeurs tes
+{
+    int cpt;
+    switch (sens)
+    {
+        case 'z':
+        {
+            for (cpt = 0; cpt < taille_bateau; cpt++){
+                grille[coor[0]][coor[1] - cpt] = logobateau;
+            }
+        }
+        break;
+        case 's':
+        {
+            for (cpt = 0; cpt < taille_bateau; cpt++){
+                grille[coor[0]][coor[1] + cpt] = logobateau;
+            }
+        }
+        break;
+        case 'q':
+        {
+            for (cpt = 0; cpt < taille_bateau; cpt++){
+                grille[coor[0] - cpt][coor[1]] = logobateau;
+            }
+        }
+        break;
+        case 'd':
+        {
+            for (cpt = 0; cpt < taille_bateau; cpt++){
+                grille[coor[0] + cpt][coor[1]] = logobateau;
+            }
+        }
+        break;
+    }
+}
+
+void placer_bateau(int modeplace, char logobateau, t_grille & grille, int taille_bateau,string nom_bateau ){
+
+
+
+
+    bool verif, verif_sens;
+    char sens;
+    int cpt;
+    T_coo verifsens_coo;
+    T_coo coor;
+    int cptechec;
+    int cptX, cptY;
+    char lettrex;
+    int memo;
+
+    do
+    {
+        do //on regarde si y qqchose sur la case selctionne
+        {
+            if (modeplace == 2)
+            {
+                cout << "Donnez une coordonnees du "<<nom_bateau<< " de taille "<<taille_bateau<<endl;
+                cin >> lettrex;
+                coor[0] = lettrex-65;
+                cin >> coor[1];
+                verif = verifcoo_placement(coor, grille);
+                    if (verif == false )
+                cout<<"Coordonee invalide"<<endl;
+            }
+            else
+            {
+                srand(time(NULL));
+                coor[0] = rand() % TAILLE_X ;
+                coor[1] = rand() % TAILLE_Y ;
+                verif = verifcoo_placement(coor, grille);
+            }
+        }
+        while (verif == false);
+        if (modeplace == 2){
+            do//on demande le sens
+            {
+                cout << "entrez le sens de placement: ZQSD ";
+                cin >> sens;
+            }while (sens != 'z' && sens != 'q' && sens != 's' && sens != 'd');
+
+        }else {
+            memo = rand() % 4;
+            switch (memo){
+                case 0 :
+                    sens = 'z';
+                break;
+                case 1 :
+                    sens = 'q';
+                break;
+                case 2 :
+                    sens = 's';
+                break;
+                case 3 :
+                    sens = 'd';
+                break;
+            }
+        }
+
+        verifsens_coo[1] = coor[1];
+        verifsens_coo[0] = coor[0];
+        //les valuers de verif definit ici avant d'etre defini plus
+
+        //-----------
+
+        //debut switch
+        switch (sens)
+        {
+            case 'z':
+            {
+                verif_sens = true;
+                    for (cpt = 0; cpt < taille_bateau; cpt++){
+                        verifsens_coo[1] = coor[1] - cpt; //on fait varier postivment notre coo Y
+                        verif = verifcoo_placement(verifsens_coo, grille);
+                        if (verif == false)//si c'est faux une seul fois le placment sera refuse a la fin
+                            verif_sens = false;
+                    }
+
+            }
+            break;
+
+            case 's':
+            {
+                verif_sens = true;
+                for (cpt = 0; cpt < taille_bateau; cpt++){
+                    verifsens_coo[1] = coor[1] + cpt; //on fait varier negativement notre coo Y
+                    verif = verifcoo_placement(verifsens_coo, grille);
+                    if (verif == false)//si c'est faux une seul fois le placment sera refuse a la fin
+                        verif_sens = false;
+                    }
+            }
+            break;
+
+            case 'd':
+            {
+                verif_sens = true;
+                for (cpt = 0; cpt < taille_bateau; cpt++){
+                    verifsens_coo[0] = coor[0] + cpt; //on fait varier postivment notre coo X
+                    verif = verifcoo_placement(verifsens_coo, grille);
+                    if (verif == false)//si c'est faux une seul fois le placment sera refuse a la fin
+                        verif_sens = false;
+                    }
+            }
+            break;
+
+            case 'q':
+            {
+                verif_sens = true;
+                for (cpt = 0; cpt < taille_bateau; cpt++){
+                    verifsens_coo[0] = coor[0] - cpt; //on fait varier negativement notre coo X
+                    verif = verifcoo_placement(verifsens_coo, grille);
+                    if (verif == false)//si c'est faux une seul fois le placment sera refuse a la fin
+                        verif_sens = false;
+                    }
+            }
+            break;
+        }
+
+    } while (verif_sens == false);//si verif sens est faux on reprend le palcment de ce bateau depuis le debut
+
+    remplir_grille(coor, grille, logobateau,sens, taille_bateau);
+}
+int Choisir_Mode_placemennt(int player){
+    int choix;
+
+    cout<<"               Choisir mode de placement pour le joueur "<<player<<endl<<endl;
+    cout<<"[1] Placement Auto"<<endl;
+    cout<<"[2] Placement Manuel"<<endl;
+    cin>>choix;
+    while(choix != 1 && choix!= 2){
+        cout<<"Choisir un mode de placement valide"<<endl;
+        cin>>choix;
+    }
+    return(choix);
+}
+
+void placement(t_grille &Grillemas, int mode_placement, t_fiche_bateau fiche,int player){
+    int cpt_bat;
+    init_grille(Grillemas);
+    afficher_grille(Grillemas, player,0);
+    for(cpt_bat=0; cpt_bat < NB_BATEAU; cpt_bat++){
+        placer_bateau(mode_placement,fiche[cpt_bat][player-1].logobateau,Grillemas,fiche[cpt_bat][player-1].taille, fiche[cpt_bat][player-1].nom_bat );
+        system("cls");
+        afficher_grille(Grillemas, player,0);
+        cout<<"Le bateau "<<fiche[cpt_bat][player-1].nom_bat<<" a ete place"<<endl;
+    }
+}
+
+void demandetir (T_coo &coor,int modetir, int player){
+    char lettrex;
+
+    if (modetir == 1)
+    {
+        cout << "Joueur "<<player<<", donnez la coordonnee du tir : ";
+        cin >> lettrex;
+        coor[0] = lettrex-65;
+        cin >> coor[1];
+
+    }
+    else
+    {
+        coor[0] = rand() % TAILLE_X ;
+        coor[1] = rand() % TAILLE_Y ;
+    }
+}
+
+bool touche_tir(T_coo coor, t_grille grille)
+{
+    bool touche;
+    char cible;
+    char nomcase;
+
+    nomcase = coor[0] + 65;
+    cible = grille[coor[0]][coor[1]];
+    if (cible > 64 and cible <= 90)
+    {
+        touche = true;
+
+        cout << "\nCible atteinte en case [" << nomcase << ":" << coor[1] << "] !\n\n";
+        Sleep(2500);
+    }
+    else
+    {
+        touche = false;
+
+        cout << "\nNous avons touche la mer en [" << nomcase << ":" << coor[1] << "] ... \n\n";
+        Sleep(2500);
+    }
+
+
+    return (touche);
+}
+
+bool verifcoo_tir(T_coo coor, t_grille grille_jolie, int mode)//verifie si une case est occupe par un
+{
+    bool verif;
+    char cible;
+
+    cible = grille_jolie[coor[0]][coor[1]];
+
+    if (cible == ' ')
+        verif = true;
+    else if (cible == 'X' || cible =='O')// a voir si on garde toujours O et X pour les rucs deja touche
+    {
+        verif = false;
+        if (mode == 1)
+            cout <<endl<< "La case a deja ete vise";
+
+    }
+
+    else if (coor[0] > TAILLE_X and coor[1] > TAILLE_Y and coor[0] < 0 and coor[1] < 0) // on verifie si c'est dans le terrain avec nos limites exclues car rien est plassable sur les bordure
+
+    {
+        verif = false;
+        if (mode==1)
+            cout << "\nvous visez hors du terrain\n";
+    }
+    else
+    {
+        verif = false;
+        cout << "\n.... ca rate mais on sait pas pourquoi ...Mhe\n\n";
+    }
+
+    return (verif);
+}
+
+void Convertisseur_lettre_bateau(char& idlettre, int& idchiffre, bool& veriftouche)
+{
+    switch (idlettre)
+    {
+    case 'T': {idchiffre = 0;  }break;
+
+    case 'S': {idchiffre = 1;  }break;
+
+    case 'C': { idchiffre = 2; }break;
+
+    case 'P': { idchiffre = 3; }break;
+
+    default: {veriftouche = false; }
+    }
+}
+
+bool Mortbateau(int PV_perdu, int PV_total)
+{
+    bool coule;
+
+    if (PV_perdu >= PV_total)
+        coule = true;
+    else
+        coule = false;
+
+        return(coule);
+
+}
+
+void tourcombat(t_grille& grillemasque, t_grille& grillejolie, int Current_player, int modetir, t_fiche_bateau & liste_bat)
+{
+    T_coo coor;
+    bool veriftir, veriftouche;
+    char cible;
+    int idcible;
+    int PV_perdu_navire;
+    int PV_total_navire;
+
+    do
+    {
+        demandetir(coor, modetir, Current_player);//le nom veut tout dire
+        veriftir = verifcoo_tir(coor, grillejolie, modetir);// de meme
+
+    } while (veriftir == false);//reste bloqué tant que ne donne pas de bonne coordonnées
+
+    veriftouche = touche_tir(coor, grillemasque);//le nom veut tout dire
+
+    if (veriftouche == true)// de meme
+    {
+        cible = grillemasque[coor[0]][coor[1]];// la cible est le caraatere utilise sur le terrain pour le navire
+        Convertisseur_lettre_bateau(cible, idcible, veriftouche);//convertie la lettre en son ID de meme mais fait que si qqchose n'est pas une des lettre de navire ca rpaerte en touche dans l'eau
+        //Transforme cible (char) en idcible (int)
+    }
+
+    if (veriftouche == true)
+    {
+
+        grillemasque[coor[0]][coor[1]] = 'X';//met le caratere du touche d'un navire sur tout les terrains du bon joueur
+        grillejolie[coor[0]][coor[1]] = 'X';
+
+    }
+    else
+        {
+        grillemasque[coor[0]][coor[1]] = 'O';//met le caratere du touche a l'eau sur tout les terrains
+        grillejolie[coor[0]][coor[1]] = 'O';
+        }
+
+    if (veriftouche == true)//met a jour ce qu'il faut et regarde si il est mort
+    {
+        PV_perdu_navire = liste_bat[idcible][Current_player].nb_touche ++;//va chercher les pv du navire touché par la frappe
+        PV_total_navire = liste_bat[idcible][Current_player].taille;
+
+        liste_bat[idcible][Current_player].etat = Mortbateau(PV_perdu_navire, PV_total_navire);
+
+    }
+}
+
+
+bool verif_win(int player,t_fiche_bateau fiche ){ // Tant qu'il reste u moins un bateau verifwin est vrai.
+   int cpt;
+   bool win = true;
+
+   for(cpt=0; cpt<NB_BATEAU; cpt++){
+        if (fiche[cpt][player-1].etat == true)
+            win = false;
+   }
+   return (win);
+}
+
+void jouer (t_fiche_bateau &fiche){
+
+    T_coo coor_tir;
+    int mode;
+    int cpt;
+    int Current_player = 1;
+    int Other_player;
+    int mode_placement;
+    int nb_bateau;
+    bool verifwinJ1 = false;
+    bool verifwinJ2 = false;
+    t_grille GrillemasJ1;
+    t_grille GrillemasJ2;
+    t_grille GrillejolieJ1;
+    t_grille GrillejolieJ2;
+    char suite;
+    int valid;
+
+    system("cls");
+    mode = choisir_mode();
+    do{
+        system("cls");
+        mode_placement = Choisir_Mode_placemennt(Current_player);
+        system("cls");
+        placement(GrillemasJ1, mode_placement, fiche, Current_player);
+        cout<<endl<<"Voulez-vous relancer le placement ?"<<endl;
+        cout<<"[1] Relancer"<<endl;
+        cout<<"[2] Continuer"<<endl;
+        cin>>valid;
+    }while(valid!=2);
+    Change_joueur(Current_player);
+    do{
+        system("cls");
+        mode_placement = Choisir_Mode_placemennt(Current_player);
+        system("cls");
+        placement(GrillemasJ2, mode_placement, fiche, Current_player);
+        cout<<endl<<"Voulez-vous relancer le placement ?"<<endl;
+        cout<<"[1] Relancer"<<endl;
+        cout<<"[2] Continuer"<<endl;
+        cin>>valid;
+    }while(valid!=2);
+    init_grille(GrillejolieJ1);
+    init_grille(GrillejolieJ2);
+    system("cls");
+    do{
+        Change_joueur(Current_player);
+        Other_player = Current_player;
+        Change_joueur(Other_player);
+        afficher_grille(GrillejolieJ2, Other_player, verifwinJ1);
+        tourcombat(GrillemasJ2, GrillejolieJ2, Current_player, 1, fiche);
+        system("cls");
+        afficher_grille(GrillejolieJ2, Other_player, verifwinJ1);
+        Sleep(4000);
+        verifwinJ1 = verif_win(Current_player,fiche);
+        system("cls");
+        if (verifwinJ1 == false){
+            Change_joueur(Current_player);
+            Other_player = Current_player;
+            Change_joueur(Other_player);
+            afficher_grille(GrillejolieJ1,Other_player, verifwinJ2);
+            tourcombat(GrillemasJ1, GrillejolieJ1, Current_player, mode,fiche);
+            system("cls");
+            afficher_grille(GrillejolieJ1, Other_player, verifwinJ2);
+            Sleep(4000);
+            verifwinJ2 = verif_win(Current_player, fiche);
+            system("cls");
+        }
+    }while(verifwinJ1 == false && verifwinJ2==false);
+    for(cpt=10;cpt<=0;cpt--){
+        cout<<"Retour au menu dans "<<cpt<<" s";
+        Sleep(1000);
+    }
+
+}
+
+void lire_regles (){
+
+}
+
+void options (){
+
+}
+
+int main()
+{
+    int choix;
+    t_fiche_bateau fiche_bateau;
+    int cpt;
+
+    for(cpt=0; cpt<deux; cpt++){
+        fiche_bateau[0][cpt].taille = 2;
+        fiche_bateau[0][cpt].logobateau = 'T';
+        fiche_bateau[0][cpt].nom_bat = "Torpilleur";
+        fiche_bateau[0][cpt].etat = true;
+        fiche_bateau[0][cpt].nb_touche = 0;
+
+        fiche_bateau[1][cpt].taille = 3;
+        fiche_bateau[1][cpt].logobateau = 'S';
+        fiche_bateau[1][cpt].nom_bat = "Sous-marin";
+        fiche_bateau[1][cpt].etat = true;
+        fiche_bateau[1][cpt].nb_touche = 0;
+
+        fiche_bateau[2][cpt].taille = 4;
+        fiche_bateau[2][cpt].logobateau = 'C';
+        fiche_bateau[2][cpt].nom_bat = "Croiseur";
+        fiche_bateau[2][cpt].etat = true;
+        fiche_bateau[2][cpt].nb_touche = 0;
+
+        fiche_bateau[3][cpt].taille = 5;
+        fiche_bateau[3][cpt].logobateau = 'P';
+        fiche_bateau[3][cpt].nom_bat = "Porte-avion";
+        fiche_bateau[3][cpt].etat = true;
+        fiche_bateau[3][cpt].nb_touche = 0;
+    }
+
+
+
+    do{
+        cout<<"               Menu"<<endl<<endl;
+        cout<<"[1]  Jouer"<<endl;
+        cout<<"[2]  Lire les regles"<<endl;
+        cout<<"[3]  Options"<<endl;
+        cout<<"[4]  Quitter"<<endl;
+        cin>>choix;
+        switch (choix){
+            case 1 : jouer(fiche_bateau);
+            break;
+            case 2 : lire_regles();
+            break;
+            case 3 : options();
+            break;
+            case 4 :cout<<endl<<"Au revoir";
+            break;
+            default :cout<<"Choisir un chiffre valable"<<endl;
+        }
+    }while(choix != 4);
+}
